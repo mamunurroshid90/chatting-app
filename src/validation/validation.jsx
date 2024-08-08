@@ -11,3 +11,7 @@ export const signUp = Yup.object({
     )
     .required("Please enter your password"),
 });
+export const signIn = Yup.object({
+  email: Yup.string().email().required("Please enter your email"),
+  password: Yup.string().min(8).required("Please enter your password"),
+});

@@ -1,73 +1,58 @@
 import { useFormik } from "formik";
 import React, { useState } from "react";
-import { signUp } from "../validation/validation";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-} from "firebase/auth";
+import { signIn } from "../validation/validation";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { BeatLoader } from "react-spinners";
+import { useDispatch } from "react-redux";
+import { loggedInUser } from "../feature/slice/loginSlice";
 import { Link, useNavigate } from "react-router-dom";
 
-const FormReg = ({ toast }) => {
+const LoginForm = ({ toast }) => {
   const [loading, setLoading] = useState(false);
   const auth = getAuth();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const initialValues = {
-    fullName: "",
     email: "",
     password: "",
   };
   const formik = useFormik({
     initialValues,
     onSubmit: () => {
-      createNewUser();
+      signInUser();
     },
-    validationSchema: signUp,
+    validationSchema: signIn,
   });
 
-  const createNewUser = () => {
+  const signInUser = () => {
     setLoading(true);
-    createUserWithEmailAndPassword(
+    signInWithEmailAndPassword(
       auth,
       formik.values.email,
       formik.values.password
     )
-      .then(() => {
-        sendEmailVerification(auth.currentUser)
-          .then(() => {
-            toast.success("Email sent for verification", {
-              position: "top-right",
-              autoClose: 1000,
-              hideProgressBar: true,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "dark",
-            });
-            setTimeout(() => {
-              navigate("/login");
-            }, 2000);
-            setLoading(false);
-          })
-          .catch((error) => {
-            toast.error(error.message, {
-              position: "top-right",
-              autoClose: 1000,
-              hideProgressBar: true,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "dark",
-            });
-            setLoading(false);
+      .then(({ user }) => {
+        if (user.emailVerified === true) {
+          dispatch(loggedInUser(user));
+          localStorage.setItem("user", JSON.stringify(user));
+          navigate("/");
+        } else {
+          toast.error("Please verified your email", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "dark",
           });
+          setLoading(false);
+        }
       })
       .catch((error) => {
-        if (error.message.includes("auth/email-already-in-use")) {
-          toast.error("this email already in use", {
+        if (error.message.includes("auth/invalid-credential")) {
+          toast.error("Email or Password incorrect", {
             position: "top-right",
             autoClose: 1000,
             hideProgressBar: true,
@@ -81,27 +66,13 @@ const FormReg = ({ toast }) => {
         }
       });
   };
-
   return (
     <>
       <div className="">
         <h2 className=" font-fontBold text-center mb-3 text-xl">
-          Register your new journey
+          Login your new journey
         </h2>
         <form onSubmit={formik.handleSubmit} className=" flex flex-col gap-3">
-          <input
-            type="text"
-            placeholder="Enter your name"
-            name="fullName"
-            value={formik.values.fullName}
-            onChange={formik.handleChange}
-            className=" border border-slate-300 p-2 rounded-sm outline-none"
-          />
-          {formik.errors.fullName && formik.touched.fullName && (
-            <p className=" text-sm font-fontRegular text-red-500">
-              {formik.errors.fullName}
-            </p>
-          )}
           <input
             type="email"
             name="email"
@@ -129,16 +100,17 @@ const FormReg = ({ toast }) => {
             </p>
           )}
           <button
+            type="submit"
             disabled={loading}
             className=" bg-slate-900 text-white text-center font-fontBold rounded-sm py-2"
           >
-            {loading ? <BeatLoader color="#fff" size={5} /> : "Sign up"}
+            {loading ? <BeatLoader color="#fff" size={5} /> : "Sign in"}
           </button>
         </form>
         <p className=" text-sm mt-3 text-center text-blue-500">
-          Already have an account?{" "}
-          <Link to="/login" className=" text-blue-500 hover:underline">
-            Sign in
+          I don't have an account?{" "}
+          <Link to="/registration" className=" text-blue-500 hover:underline">
+            Sign Up
           </Link>
         </p>
       </div>
@@ -146,4 +118,4 @@ const FormReg = ({ toast }) => {
   );
 };
 
-export default FormReg;
+export default LoginForm;
