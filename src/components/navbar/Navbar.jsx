@@ -1,0 +1,76 @@
+import React from "react";
+import { FriendsIcon } from "../../svg/Friends";
+import { MessageIcon } from "../../svg/Message";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { getAuth, signOut } from "firebase/auth";
+import { useDispatch } from "react-redux";
+import { loggedOutUser } from "../../feature/slice/loginSlice";
+import { CameraIcon } from "../../svg/Camera";
+
+const Navbar = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const auth = getAuth();
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => {
+        navigate("/login");
+        localStorage.removeItem("user");
+        dispatch(loggedOutUser());
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+  return (
+    <>
+      <div className="flex justify-between items-center py-3 bg-slate-900 px-7">
+        <div className="flex items-center gap-x-2">
+          <div className=" relative">
+            <div className=" w-16 h-16 rounded-full bg-orange-400 overflow-hidden"></div>
+            <div className=" absolute bottom-0 right-0 w-5 h-5 bg-white rounded-full flex items-center justify-center">
+              <CameraIcon />
+            </div>
+          </div>
+          <div>
+            <span className=" font-fontRegular text-white">Mamunur Roshid</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-x-4">
+          <Link
+            to="/"
+            className={`${
+              location.pathname == "/"
+                ? "text-white bg-[#6CD0FB]"
+                : "text-[#292D32] bg-white"
+            }  w-10 h-10 rounded-full flex items-center justify-center`}
+          >
+            <FriendsIcon />
+          </Link>
+          <Link
+            to="/message"
+            className={`${
+              location.pathname == "/message"
+                ? "text-white bg-[#6CD0FB]"
+                : "text-[#292D32] bg-white"
+            }  w-10 h-10 rounded-full flex items-center justify-center`}
+          >
+            <MessageIcon />
+          </Link>
+        </div>
+        <div>
+          <button
+            className=" bg-[#6CD0FB] px-4 py-2 rounded-md text-white"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Navbar;
