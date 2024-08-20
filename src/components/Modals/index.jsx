@@ -1,8 +1,29 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { CrossIcon } from "../../svg/Cross";
 import { UploadIcon } from "../../svg/Upload";
+import { redirect } from "react-router-dom";
+import ImageCropper from "../ImageCropper";
 
 const Modals = ({ setShow }) => {
+  const [image, setImage] = useState();
+  const [cropData, setCropData] = useState("#");
+  const cropperRef = useRef();
+
+  const handleChange = (e) => {
+    e.preventDefault();
+    let files;
+    if (e.dataTransfer) {
+      files = e.dataTransfer.files;
+    } else if (e.target) {
+      files = e.target.files;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImage(reader.result);
+    };
+    reader.readAsDataURL(files[0]);
+  };
+
   const fileRef = useRef(null);
   return (
     <>
@@ -30,12 +51,24 @@ const Modals = ({ setShow }) => {
                     <UploadIcon />
                   </div>
                   <h4>Upload your profile photo</h4>
-                  <input type="file" ref={fileRef} hidden />
+                  <input
+                    type="file"
+                    ref={fileRef}
+                    hidden
+                    onChange={handleChange}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
+        {image && (
+          <ImageCropper
+            image={image}
+            setImage={setImage}
+            cropperRef={cropperRef}
+          />
+        )}
       </div>
     </>
   );
