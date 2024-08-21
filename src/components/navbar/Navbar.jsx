@@ -3,13 +3,15 @@ import { FriendsIcon } from "../../svg/Friends";
 import { MessageIcon } from "../../svg/Message";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { loggedOutUser } from "../../feature/slice/loginSlice";
 import { CameraIcon } from "../../svg/Camera";
 import { createPortal } from "react-dom";
 import Modals from "../Modals";
+import AvatarImg from "../../assets/avatar.jpg";
 
 const Navbar = () => {
+  const user = useSelector((user) => user.login.loggedIn);
   const [show, setShow] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,7 +34,13 @@ const Navbar = () => {
       <div className="flex justify-between items-center py-3 bg-slate-900 px-7">
         <div className="flex items-center gap-x-2">
           <div className=" relative">
-            <div className=" w-16 h-16 rounded-full bg-orange-400 overflow-hidden"></div>
+            <div className=" w-16 h-16 rounded-full overflow-hidden">
+              <img
+                src={user.photoURL || AvatarImg}
+                alt=""
+                className=" w-full h-full object-cover"
+              />
+            </div>
             <div
               className=" absolute bottom-0 right-0 w-5 h-5 bg-white rounded-full flex items-center justify-center cursor-pointer"
               onClick={() => setShow(true)}
