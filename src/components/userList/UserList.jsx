@@ -43,8 +43,8 @@ const UserList = () => {
     <>
       <div className=" px-7 pt-3 h-[600px] bg-[#FBFBFB]">
         <h2 className=" font-fontBold text-black text-xl">All user</h2>
-        {users.map((item) => (
-          <div className="flex items-center justify-between mt-5">
+        {users.map((item, index) => (
+          <div key={index} className="flex items-center justify-between mt-5">
             <div className="flex items-center gap-x-2">
               <div className=" w-12 h-12 rounded-full bg-purple-400 overflow-hidden">
                 <img
