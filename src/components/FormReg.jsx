@@ -5,14 +5,17 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  updateProfile,
 } from "firebase/auth";
 import { BeatLoader } from "react-spinners";
 import { Link, useNavigate } from "react-router-dom";
+import { getDatabase, ref, set } from "firebase/database";
 
 const FormReg = ({ toast }) => {
   const [loading, setLoading] = useState(false);
   const auth = getAuth();
   const navigate = useNavigate();
+  const db = getDatabase();
   const initialValues = {
     fullName: "",
     email: "",
@@ -33,23 +36,34 @@ const FormReg = ({ toast }) => {
       formik.values.email,
       formik.values.password
     )
-      .then(() => {
-        sendEmailVerification(auth.currentUser)
+      .then(({ user }) => {
+        console.log(user);
+        updateProfile(auth.currentUser, {
+          displayName: formik.values.fullName,
+        })
           .then(() => {
-            toast.success("Email sent for verification", {
-              position: "top-right",
-              autoClose: 1000,
-              hideProgressBar: true,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "dark",
+            sendEmailVerification(auth.currentUser).then(() => {
+              toast.success("Email sent for verification", {
+                position: "top-right",
+                autoClose: 1000,
+                hideProgressBar: true,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "dark",
+              });
+              setTimeout(() => {
+                navigate("/login");
+              }, 2000);
+              setLoading(false);
             });
-            setTimeout(() => {
-              navigate("/login");
-            }, 2000);
-            setLoading(false);
+          })
+          .then(() => {
+            set(ref(db, "users/" + user.uid), {
+              username: user.displayName,
+              email: user.email,
+            });
           })
           .catch((error) => {
             toast.error(error.message, {

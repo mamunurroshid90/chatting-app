@@ -49,7 +49,9 @@ const Navbar = () => {
             </div>
           </div>
           <div>
-            <span className=" font-fontRegular text-white">Mamunur Roshid</span>
+            <span className=" font-fontRegular text-white">
+              {user.displayName}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-x-4">

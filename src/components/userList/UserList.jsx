@@ -1,50 +1,69 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { AddFriendIcon } from "../../svg/AddFriend";
+import { getDatabase, onValue, ref } from "firebase/database";
+import { useSelector } from "react-redux";
+import { getDownloadURL, getStorage, ref as Ref } from "firebase/storage";
+import avatarImg from "../../assets/avatar.jpg";
 
 const UserList = () => {
+  const [users, setUsers] = useState([]);
+  const user = useSelector((user) => user.login.loggedIn);
+  const storage = getStorage();
+  const db = getDatabase();
+  useEffect(() => {
+    const starCountRef = ref(db, "users/");
+    onValue(starCountRef, (snapshot) => {
+      const users = [];
+      snapshot.forEach((userList) => {
+        if (user.uid !== userList.key) {
+          getDownloadURL(Ref(storage, userList.key))
+            .then((downloadURL) => {
+              users.push({
+                ...userList.val(),
+                id: userList.key,
+                photoURL: downloadURL,
+              });
+            })
+            .catch((error) => {
+              users.push({
+                ...userList.val(),
+                id: userList.key,
+                photoURL: null,
+              });
+            })
+            .then(() => {
+              setUsers([...users]);
+            });
+        }
+      });
+    });
+  }, [db, user.uid, storage]);
+
   return (
     <>
       <div className=" px-7 pt-3 h-[600px] bg-[#FBFBFB]">
         <h2 className=" font-fontBold text-black text-xl">All user</h2>
-        <div className="flex items-center justify-between mt-5">
-          <div className="flex items-center gap-x-2">
-            <div className=" w-12 h-12 rounded-full bg-purple-400 overflow-hidden"></div>
-            <div>
-              <h3 className=" font-fontRegular text-lg text-black">
-                Mamunur Roshid
-              </h3>
+        {users.map((item) => (
+          <div className="flex items-center justify-between mt-5">
+            <div className="flex items-center gap-x-2">
+              <div className=" w-12 h-12 rounded-full bg-purple-400 overflow-hidden">
+                <img
+                  src={item.photoURL || avatarImg}
+                  alt=""
+                  className=" w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <h3 className=" font-fontRegular text-lg text-black">
+                  {item.username}
+                </h3>
+              </div>
+            </div>
+            <div className=" text-black cursor-pointer">
+              <AddFriendIcon />
             </div>
           </div>
-          <div className=" text-black cursor-pointer">
-            <AddFriendIcon />
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-5">
-          <div className="flex items-center gap-x-2">
-            <div className=" w-12 h-12 rounded-full bg-purple-400 overflow-hidden"></div>
-            <div>
-              <h3 className=" font-fontRegular text-lg text-black">
-                Sazzadur Rahman
-              </h3>
-            </div>
-          </div>
-          <div className=" text-black cursor-pointer">
-            <AddFriendIcon />
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-5">
-          <div className="flex items-center gap-x-2">
-            <div className=" w-12 h-12 rounded-full bg-purple-400 overflow-hidden"></div>
-            <div>
-              <h3 className=" font-fontRegular text-lg text-black">
-                Abdullah Foysal
-              </h3>
-            </div>
-          </div>
-          <div className=" text-black cursor-pointer">
-            <AddFriendIcon />
-          </div>
-        </div>
+        ))}
       </div>
     </>
   );
