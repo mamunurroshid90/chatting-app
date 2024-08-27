@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { AddFriendIcon } from "../../svg/AddFriend";
-import { getDatabase, onValue, ref } from "firebase/database";
+import { getDatabase, onValue, ref, set } from "firebase/database";
 import { useSelector } from "react-redux";
 import { getDownloadURL, getStorage, ref as Ref } from "firebase/storage";
 import avatarImg from "../../assets/avatar.jpg";
@@ -39,6 +39,17 @@ const UserList = () => {
     });
   }, [db, user.uid, storage]);
 
+  const handleFriendRequest = (data) => {
+    set(ref(db, "friendRequest"), {
+      senderName: user.displayName,
+      senderId: user.uid,
+      currentProfile: user.photoURL ?? "/src/assets/avatar.jpg",
+      receiverName: data.username,
+      receiverId: data.id,
+      receiverProfile: data.photoURL ?? "/src/assets/avatar.jpg",
+    });
+  };
+
   return (
     <>
       <div className=" px-7 pt-3 h-[600px] bg-[#FBFBFB]">
@@ -59,7 +70,10 @@ const UserList = () => {
                 </h3>
               </div>
             </div>
-            <div className=" text-black cursor-pointer">
+            <div
+              className=" text-black cursor-pointer"
+              onClick={() => handleFriendRequest(item)}
+            >
               <AddFriendIcon />
             </div>
           </div>
