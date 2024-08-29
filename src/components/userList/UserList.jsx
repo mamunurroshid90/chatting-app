@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { AddFriendIcon } from "../../svg/AddFriend";
-import { getDatabase, onValue, ref, set } from "firebase/database";
+import { getDatabase, onValue, push, ref, set } from "firebase/database";
 import { useSelector } from "react-redux";
 import { getDownloadURL, getStorage, ref as Ref } from "firebase/storage";
 import avatarImg from "../../assets/avatar.jpg";
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
+  const [friendRequestList, setFriendRequestList] = useState([]);
+  const [cancelFriendReq, setCancelFriendReq] = useState([]);
   const user = useSelector((user) => user.login.loggedIn);
   const storage = getStorage();
   const db = getDatabase();
@@ -39,8 +41,10 @@ const UserList = () => {
     });
   }, [db, user.uid, storage]);
 
+  // sent friendRequest handler
+
   const handleFriendRequest = (data) => {
-    set(ref(db, "friendRequest"), {
+    set(push(ref(db, "friendRequest")), {
       senderName: user.displayName,
       senderId: user.uid,
       currentProfile: user.photoURL ?? "/src/assets/avatar.jpg",
@@ -49,6 +53,30 @@ const UserList = () => {
       receiverProfile: data.photoURL ?? "/src/assets/avatar.jpg",
     });
   };
+
+  // show friend request
+  useEffect(() => {
+    const starCountRef = ref(db, "friendRequest/");
+    onValue(starCountRef, (snapshot) => {
+      let reqArr = [];
+      snapshot.forEach((item) => {
+        reqArr.push(item.val().receiverId + item.val().senderId);
+      });
+      setFriendRequestList(reqArr);
+    });
+  }, [db]);
+
+  // cancel friend request
+  useEffect(() => {
+    const starCountRef = ref(db, "friendRequest/");
+    onValue(starCountRef, (snapshot) => {
+      let cancelReq = [];
+      snapshot.forEach((item) => {
+        cancelReq.push({ ...item.val(), id: item.key });
+      });
+      setCancelFriendReq(cancelReq);
+    });
+  }, [db]);
 
   return (
     <>
@@ -70,12 +98,19 @@ const UserList = () => {
                 </h3>
               </div>
             </div>
-            <div
-              className=" text-black cursor-pointer"
-              onClick={() => handleFriendRequest(item)}
-            >
-              <AddFriendIcon />
-            </div>
+            {friendRequestList.includes(item.id + user.uid) ||
+            friendRequestList.includes(user.uid + item.id) ? (
+              <button className=" px-4 py-2 rounded-md bg-gray-400 text-white font-medium font-fontRegular">
+                Cancel Request
+              </button>
+            ) : (
+              <div
+                className=" text-black cursor-pointer"
+                onClick={() => handleFriendRequest(item)}
+              >
+                <AddFriendIcon />
+              </div>
+            )}
           </div>
         ))}
       </div>
