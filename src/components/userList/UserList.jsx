@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { AddFriendIcon } from "../../svg/AddFriend";
-import { getDatabase, onValue, push, ref, set } from "firebase/database";
+import {
+  getDatabase,
+  onValue,
+  push,
+  ref,
+  remove,
+  set,
+} from "firebase/database";
 import { useSelector } from "react-redux";
 import { getDownloadURL, getStorage, ref as Ref } from "firebase/storage";
 import avatarImg from "../../assets/avatar.jpg";
@@ -59,24 +66,24 @@ const UserList = () => {
     const starCountRef = ref(db, "friendRequest/");
     onValue(starCountRef, (snapshot) => {
       let reqArr = [];
-      snapshot.forEach((item) => {
-        reqArr.push(item.val().receiverId + item.val().senderId);
-      });
-      setFriendRequestList(reqArr);
-    });
-  }, [db]);
-
-  // cancel friend request
-  useEffect(() => {
-    const starCountRef = ref(db, "friendRequest/");
-    onValue(starCountRef, (snapshot) => {
       let cancelReq = [];
       snapshot.forEach((item) => {
+        reqArr.push(item.val().receiverId + item.val().senderId);
         cancelReq.push({ ...item.val(), id: item.key });
       });
+      setFriendRequestList(reqArr);
       setCancelFriendReq(cancelReq);
     });
   }, [db]);
+
+  const handleCancelReq = (itemId) => {
+    const reqToCancel = cancelFriendReq.find(
+      (req) => req.receiverId === itemId && req.senderId === user.uid
+    );
+    if (reqToCancel) {
+      remove(ref(db, "friendRequest/" + reqToCancel.id));
+    }
+  };
 
   return (
     <>
@@ -100,7 +107,10 @@ const UserList = () => {
             </div>
             {friendRequestList.includes(item.id + user.uid) ||
             friendRequestList.includes(user.uid + item.id) ? (
-              <button className=" px-4 py-2 rounded-md bg-gray-400 text-white font-medium font-fontRegular">
+              <button
+                className=" px-4 py-2 rounded-md bg-gray-400 text-white font-medium font-fontRegular"
+                onClick={() => handleCancelReq(item.id)}
+              >
                 Cancel Request
               </button>
             ) : (
