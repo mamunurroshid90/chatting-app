@@ -48,7 +48,6 @@ const FriendRequest = () => {
     <>
       <div className=" shadow-md bg-white rounded-md p-5 h-[600px] overflow-y-auto">
         <h2 className=" font-fontBold text-black text-xl">Friend Request</h2>
-
         {friendRequestList?.map((item) => (
           <div
             className=" flex items-center justify-between gap-x-2"
