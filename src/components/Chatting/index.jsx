@@ -1,12 +1,52 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { EmojiIcon } from "../../svg/Smile";
 import { GalleryIcon } from "../../svg/Gallery";
-import DemoImg from "../../assets/demo-img.jpg";
+// import DemoImg from "../../assets/demo-img.jpg";
 import { useSelector } from "react-redux";
 import avatarImg from "../../assets/avatar.jpg";
+import { getDatabase, onValue, push, ref, set } from "firebase/database";
+import { formatDistance } from "date-fns";
 
 const Chatting = () => {
   const singleFriend = useSelector((single) => single.active.active);
+  const [message, setMessage] = useState("");
+  const [allMessage, setAllMessage] = useState([]);
+  const user = useSelector((user) => user.login.loggedIn);
+  const db = getDatabase();
+
+  const handleSendMessage = () => {
+    if (singleFriend?.status === "single") {
+      set(push(ref(db, "singleMessage")), {
+        whoSendName: user.displayName,
+        whoSendId: user.uid,
+        whoReceivedName: singleFriend.name,
+        whoReceivedId: singleFriend.id,
+        message: message,
+        date: `${new Date().getFullYear()}-${
+          new Date().getMonth() + 1
+        }-${new Date().getDate()}-${new Date().getHours()} : ${new Date().getMinutes()}`,
+      });
+      setMessage("");
+    }
+  };
+
+  // get Message
+  useEffect(() => {
+    onValue(ref(db, "singleMessage"), (snapshot) => {
+      let singleMessageArray = [];
+      snapshot.forEach((item) => {
+        if (
+          (user.uid === item.val().whoSendId &&
+            item.val().whoReceivedId === singleFriend.id) ||
+          (user.uid === item.val().whoReceivedId &&
+            item.val().whoSendId === singleFriend.id)
+        ) {
+          singleMessageArray.push(item.val());
+        }
+      });
+      setAllMessage(singleMessageArray);
+    });
+  }, [singleFriend?.id]);
   return (
     <>
       <div className=" w-full bg-white">
@@ -27,8 +67,40 @@ const Chatting = () => {
           </div>
         </div>
         <div className=" h-[430px] bg-[#fbfbfbfb] px-6 overflow-y-auto">
+          {singleFriend?.status === "single"
+            ? allMessage.map((item, i) => (
+                <div key={i}>
+                  {item.whoSendId === user.uid ? (
+                    <div className=" w-[70%] py-4 ml-auto flex flex-col items-end">
+                      <p className=" bg-slate-600 p-5 text-white rounded-md inline-block">
+                        {item.message}
+                      </p>
+                      <span className=" mt-2 text-sm text-slate-500">
+                        {/* {formatDistance(item.date, new Date(), {
+                          addSuffix: true,
+                        })} */}
+                        date
+                      </span>
+                    </div>
+                  ) : (
+                    <div className=" w-[70%] py-4 mr-auto flex flex-col items-start">
+                      <p className=" bg-slate-900 p-5 text-white rounded-md inline-block">
+                        {item.message}
+                      </p>
+                      <span className=" mt-2 text-sm text-slate-500">
+                        {/* {formatDistance(item.date, new Date(), {
+                          addSuffix: true,
+                        })} */}
+                        {/* {console.log(item.date)} */}
+                        date
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))
+            : ""}
           {/* sender message */}
-          <div className=" w-[70%] py-4 ml-auto">
+          {/* <div className=" w-[70%] py-4 ml-auto">
             <p className=" bg-slate-600 p-5 text-white rounded-md inline-block">
               Lorem ipsum dolor, sit amet consectetur adipisicing elit.
               Doloribus qui ex sit. Reiciendis ipsum ullam iste? Corrupti ab
@@ -44,9 +116,9 @@ const Chatting = () => {
               quisquam eligendi, odit magni voluptate commodi labore nam at
               rerum?
             </p>
-          </div>
+          </div> */}
           {/* receiver message */}
-          <div className=" w-[70%] py-4 mr-auto">
+          {/* <div className=" w-[70%] py-4 mr-auto">
             <p className=" bg-slate-900 p-5 text-white rounded-md inline-block">
               Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsum,
               veritatis necessitatibus, inventore aperiam atque corporis aut
@@ -62,24 +134,24 @@ const Chatting = () => {
               minima inventore sed quia facere dignissimos ipsam, aliquam quam
               incidunt?
             </p>
-          </div>
+          </div> */}
 
           {/* media */}
-          <div className=" w-[70%] py-4 ml-auto overflow-hidden">
+          {/* <div className=" w-[70%] py-4 ml-auto overflow-hidden">
             <img
               src={DemoImg}
               alt="bird"
               className=" w-full h-full object-cover rounded-md"
             />
-          </div>
+          </div> */}
           {/* media */}
-          <div className=" w-[70%] py-4 mr-auto overflow-hidden">
+          {/* <div className=" w-[70%] py-4 mr-auto overflow-hidden">
             <img
               src={DemoImg}
               alt="bird"
               className=" w-full h-full object-cover rounded-md"
             />
-          </div>
+          </div> */}
         </div>
         <div className=" bg-[#f5f5f5] py-4">
           <div className=" bg-white w-[532px] mx-auto rounded-md py-3 flex items-center justify-center gap-x-5">
@@ -91,9 +163,14 @@ const Chatting = () => {
               type="text"
               placeholder="type something"
               className=" w-[60%] p-1 outline-none"
+              onChange={(e) => setMessage(e.target.value)}
+              value={message}
             />
             <div className=" w-[15%]">
-              <button className=" bg-[#4A81D3] px-4 py-2 rounded-md font-fontRegular text-sm text-white">
+              <button
+                className=" bg-[#4A81D3] px-4 py-2 rounded-md font-fontRegular text-sm text-white"
+                onClick={handleSendMessage}
+              >
                 Send
               </button>
             </div>
