@@ -1,18 +1,28 @@
-import React, { useEffect, useState } from "react";
+import { formatDistance } from "date-fns";
+import React, { useEffect, useRef, useState } from "react";
 import { EmojiIcon } from "../../svg/Smile";
 import { GalleryIcon } from "../../svg/Gallery";
 // import DemoImg from "../../assets/demo-img.jpg";
 import { useSelector } from "react-redux";
 import avatarImg from "../../assets/avatar.jpg";
 import { getDatabase, onValue, push, ref, set } from "firebase/database";
-import { formatDistance } from "date-fns";
+import EmojiPicker from "emoji-picker-react";
+import {
+  getDownloadURL,
+  getStorage,
+  ref as Ref,
+  uploadBytesResumable,
+} from "firebase/storage";
 
 const Chatting = () => {
   const singleFriend = useSelector((single) => single.active.active);
   const [message, setMessage] = useState("");
   const [allMessage, setAllMessage] = useState([]);
+  const [emojiShow, setEmojiShow] = useState(false);
   const user = useSelector((user) => user.login.loggedIn);
   const db = getDatabase();
+  const storage = getStorage();
+  const chosenFile = useRef(null);
 
   const handleSendMessage = () => {
     if (singleFriend?.status === "single") {
@@ -24,9 +34,10 @@ const Chatting = () => {
         message: message,
         date: `${new Date().getFullYear()}-${
           new Date().getMonth() + 1
-        }-${new Date().getDate()}-${new Date().getHours()} : ${new Date().getMinutes()}`,
+        }-${new Date().getDate()}-${new Date().getHours()}: ${new Date().getMinutes()}`,
       });
       setMessage("");
+      setEmojiShow(false);
     }
   };
 
@@ -47,6 +58,51 @@ const Chatting = () => {
       setAllMessage(singleMessageArray);
     });
   }, [singleFriend?.id]);
+
+  const handleEmoji = ({ emoji }) => {
+    setMessage(message + emoji);
+  };
+
+  const handleImageUpload = (e) => {
+    // console.log(e.target.files[0]);
+    const imgFile = e.target.files[0];
+    const storageRef = Ref(
+      storage,
+      `${user.displayName} = sendImageMessage/ ${imgFile}`
+    );
+
+    const uploadTask = uploadBytesResumable(storageRef, imgFile);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log("Upload is " + progress + "% done");
+      },
+      (error) => {
+        console.log(error);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          set(push(ref(db, "singleMessage")), {
+            whoSendName: user.displayName,
+            whoSendId: user.uid,
+            whoReceivedName: singleFriend.name,
+            whoReceivedId: singleFriend.id,
+            message: message,
+            image: downloadURL,
+            date: `${new Date().getFullYear()}-${
+              new Date().getMonth() + 1
+            }-${new Date().getDate()}-${new Date().getHours()}: ${new Date().getMinutes()}`,
+          });
+          setMessage("");
+          setEmojiShow(false);
+        });
+      }
+    );
+  };
+
   return (
     <>
       <div className=" w-full bg-white">
@@ -72,15 +128,38 @@ const Chatting = () => {
                 <div key={i}>
                   {item.whoSendId === user.uid ? (
                     <div className=" w-[70%] py-4 ml-auto flex flex-col items-end">
-                      <p className=" bg-slate-600 p-5 text-white rounded-md inline-block">
-                        {item.message}
-                      </p>
-                      <span className=" mt-2 text-sm text-slate-500">
-                        {/* {formatDistance(item.date, new Date(), {
+                      {item.image ? (
+                        <div className=" w-[70%] py-4 ml-auto overflow-hidden">
+                          <img
+                            src={item.image}
+                            alt="bird"
+                            className=" w-full h-full object-cover rounded-md"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <p className=" bg-slate-600 p-5 text-white rounded-md inline-block">
+                            {item.message}
+                          </p>
+                          <span className=" mt-2 text-sm text-slate-500">
+                            {/* {console.log(item.date)}
+                        {formatDistance(item.date, new Date(), {
                           addSuffix: true,
+                          includeSeconds: true,
                         })} */}
-                        date
-                      </span>
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  ) : item.image ? (
+                    <div className=" w-[70%] py-4 mr-auto flex flex-col items-start">
+                      <div className=" w-[70%] py-4 ml-auto overflow-hidden">
+                        <img
+                          src={item.image}
+                          alt="bird"
+                          className=" w-full h-full object-cover rounded-md"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className=" w-[70%] py-4 mr-auto flex flex-col items-start">
@@ -89,8 +168,8 @@ const Chatting = () => {
                       </p>
                       <span className=" mt-2 text-sm text-slate-500">
                         {/* {formatDistance(item.date, new Date(), {
-                          addSuffix: true,
-                        })} */}
+                        addSuffix: true,
+                      })} */}
                         {/* {console.log(item.date)} */}
                         date
                       </span>
@@ -156,8 +235,31 @@ const Chatting = () => {
         <div className=" bg-[#f5f5f5] py-4">
           <div className=" bg-white w-[532px] mx-auto rounded-md py-3 flex items-center justify-center gap-x-5">
             <div className=" flex items-center gap-x-2 w-[15%]">
-              <EmojiIcon />
-              <GalleryIcon />
+              <div className=" relative">
+                <div
+                  onClick={() => setEmojiShow((prev) => !prev)}
+                  className=" cursor-pointer"
+                >
+                  <EmojiIcon />
+                </div>
+                {emojiShow && (
+                  <div className=" absolute bottom-10 -left-2">
+                    <EmojiPicker onEmojiClick={handleEmoji} />
+                  </div>
+                )}
+              </div>
+              <div
+                className=" cursor-pointer"
+                onClick={() => chosenFile.current.click()}
+              >
+                <GalleryIcon />
+              </div>
+              <input
+                ref={chosenFile}
+                hidden
+                type="file"
+                onChange={handleImageUpload}
+              />
             </div>
             <input
               type="text"
