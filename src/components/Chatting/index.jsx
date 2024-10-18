@@ -1,8 +1,6 @@
-import { formatDistance } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
 import { EmojiIcon } from "../../svg/Smile";
 import { GalleryIcon } from "../../svg/Gallery";
-// import DemoImg from "../../assets/demo-img.jpg";
 import { useSelector } from "react-redux";
 import avatarImg from "../../assets/avatar.jpg";
 import { getDatabase, onValue, push, ref, set } from "firebase/database";
